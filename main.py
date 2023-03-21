@@ -1,33 +1,91 @@
+from collections import namedtuple
+from dataclasses import dataclass
 import subprocess
-from sys import argv
+from sys import argv, exit
 
-def aapt_apk(args):
-  process = subprocess.run(
-    "aapt dump badging".split(" ") + args,
-    capture_output=True,
-    text=True
+from yaml_commands import getCommand, getCommands
+
+# TODO: trim lines func
+
+Args = namedtuple("Args", ["group", "action", "passthroughArgs"])
+
+@dataclass
+class Result:
+  code: int
+  message: str = None
+
+class ResultError(Exception):
+
+  def __init__(self, result: Result, *args) -> None:
+    super().__init__(result.message, *args)
+    self.result = result
+  
+  def makeWithResult(code, message):
+    return ResultError(Result(code, message))
+
+def parseArgs(args):
+  return Args(
+    args[1],
+    "help" if len(args) < 3 else args[2],
+    args[3:]
   )
+
+def parseCommand(dir, group, action):
+  try:
+    return getCommand(dir, group, action)
+  except KeyError:
+    raise ResultError.makeWithResult(1, f'"{action}" does not exist.')
+  except FileNotFoundError as e:
+    raise ResultError.makeWithResult(1, f'"{group}" file may not exist: {e}')
+
+def printHelp(dir, group):
+  print(f'Commands in group "{group}":')
+  try:
+    for k,v in getCommands(dir, group):
+      print(f"- {k}: {v}\n")
+  except FileNotFoundError as e:
+    raise ResultError.makeWithResult(1, f'"{group} file may not exist: {e}"')
+
+def exitWith(result: Result):
+  if result.message != None:
+    print(result.message)
+  exit(result.code)
+
+def hydrateCommand(command, args):
+  try:
+    return command.format(*args)
+  except IndexError:
+    raise ResultError.makeWithResult(1, "Error: Not enough arguments to satisfy:\n"+command)
+
+def parseCommandResult(process):
   if(process.returncode == 0):
-    print("\n".join(str(process.stdout).split("\n")[:3]))
-  else:
-    print(str(process.stderr))
-    exit(process.returncode)
+    return Result(0, str(process.stdout))
+  return Result(process.returncode, str(process.stderr))
 
-commands = [aapt_apk]
 
-def getCliName(fn):
-  return(" ".join (fn.__name__.split("_")))
+commandDir = "C:\\Users\\jberanek\\Projects\\Tools\\utility-scripts\\shorthand\\commands"
 
 if __name__ == "__main__":
-  target = None
-  for c in commands:
-    if getCliName(c) == f"{argv[1]} {argv[2]}":
-      target = c
-      break
-  
-  if target == None:
-    validCommands = ", ".join(getCliName(c) for c in commands)
-    print(f"Not a valid command! Please use one of the following:\n\t{validCommands}")
-    exit(1)
+  try:
+    args = parseArgs(argv)
 
-  target(argv[3:])
+    if args.action == "help":
+      printHelp(commandDir, args.group)
+      exit(0)
+
+    hydratedCommand = hydrateCommand(
+      parseCommand(commandDir, args.group, args.action),
+      args.passthroughArgs
+    )
+
+    process = subprocess.run(
+      hydratedCommand,
+      capture_output=True,
+      text=True
+    )  
+    exitWith(parseCommandResult(process))
+
+  except ResultError as e:
+    exitWith(e.result)
+  except Exception as e:
+    exitWith(Result(1, f'Unexpected error occurred: {e}'))

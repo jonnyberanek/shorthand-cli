@@ -1,0 +1,4 @@
+#!/bin/bash
+rm dist/settings.yml
+echo "commandDir: ../commands
+shellProgram: C:/Program Files/Git/bin/bash.exe" > dist/settings.yml

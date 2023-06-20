@@ -1,2 +1,4 @@
 #!/bin/bash
+rm -rf dist
 pyinstaller -D -F -n short main.py
+cp -R template/. dist/

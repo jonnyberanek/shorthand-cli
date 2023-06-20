@@ -1,0 +1,2 @@
+commands:
+  quickstart: echo Locate commands/main.yml and add a command like this one to start. Type:; echo 'short main <command>'; echo to use your new command.; echo To make another group like main, create another YAML file in this directory with the desired group name.

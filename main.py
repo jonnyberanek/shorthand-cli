@@ -5,8 +5,6 @@ from sys import argv, exit
 
 from yaml_commands import getCommand, getCommands
 
-# TODO: trim lines func
-
 Args = namedtuple("Args", ["group", "action", "passthroughArgs"])
 
 @dataclass
@@ -64,6 +62,7 @@ def parseCommandResult(process):
 
 
 commandDir = "C:\\Users\\jberanek\\Projects\\Tools\\utility-scripts\\shorthand\\commands"
+shellProgram = "C:\\Program Files\\Git\\bin\\bash.exe"
 
 if __name__ == "__main__":
   try:
@@ -73,15 +72,18 @@ if __name__ == "__main__":
       printHelp(commandDir, args.group)
       exit(0)
 
+    command = parseCommand(commandDir, args.group, args.action)
+
     hydratedCommand = hydrateCommand(
-      parseCommand(commandDir, args.group, args.action),
+      command.command,
       args.passthroughArgs
     )
 
     process = subprocess.run(
-      hydratedCommand,
+      [shellProgram, "-c", hydratedCommand],
       capture_output=True,
-      text=True
+      text=True,
+      shell=True,
     )  
     exitWith(parseCommandResult(process))
 

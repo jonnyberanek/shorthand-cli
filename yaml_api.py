@@ -1,9 +1,9 @@
+from dataclasses import dataclass
 from os.path import join
 
 from yaml import load
 from yaml.loader import Loader
 
-from dataclasses import dataclass
 
 @dataclass
 class Command:

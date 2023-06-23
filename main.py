@@ -11,12 +11,16 @@ def exitWith(result: ResultError):
 
 if __name__ == "__main__":
   try:
-    input = parseInput(argv)
+    input = parseInput(argv[1:])
 
     runner = CommandRunner(commandDir, shellProgram)
 
+    if input == None:
+      runner.runHelp()
+      exit(0)
+
     if input.action == "help":
-      runner.runHelp(input.group)
+      runner.runGroupHelp(input.group)
       exit(0)
 
     result = runner.runCommand(input)
